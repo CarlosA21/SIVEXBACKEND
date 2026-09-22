@@ -1,0 +1,26 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sivex-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: sivex
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build: .
+    container_name: sivex-backend
+    depends_on:
+      - mysql
+    env_file: .env
+    ports:
+      - "3001:3001"
+    command: ["node", "dist/main.js"]
+
+volumes:
+  mysql_data:
