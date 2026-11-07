@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Req, Query, ParseIntPipe } from '@nestjs/common';
+// @ts-ignore
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Req, Query, ParseIntPipe, ForbiddenException } from '@nestjs/common';
 import { projectService } from './project.service';
 import { CreateProjectDto } from './dto/create-proyecto.dto';
 import { UpdateProyectoDto } from './dto/update-proyecto.dto';
@@ -6,7 +7,10 @@ import { CreateProjectTypeDto } from './dto/create-project-type.dto';
 import { UpdateProjectTypeDto } from './dto/update-project-type.dto';
 import { JwtAuthGuard } from 'src/auth/jwt_auth.guard';
 import { AssignUserDto } from './dto/assign-user.dto';
-
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../auth/roles.enum';
+ 
 @Controller('projects')
 export class projectController {
 
@@ -18,8 +22,11 @@ export class projectController {
   //-------------------Ruta para obtener los proyectos con sus responsables
 
   // Obtener proyecto con coordinador, facilitador y voluntarios usando JSON
+  @UseGuards(JwtAuthGuard)
   @Post('responsables')
-  async getProjectResponsables(@Body('projectId') projectId: number) {
+  getProjectResponsables(
+    @Body('projectId', ParseIntPipe) projectId: number,
+  ) {
     return this.projectService.getProjectWithRoles(projectId);
   }
 
@@ -77,13 +84,20 @@ export class projectController {
     return this.projectService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMINISTRATOR)
   @Patch(':id')
-  update(@Param('id') id: number, @Body() dto: UpdateProyectoDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateProyectoDto,
+  ) {
     return this.projectService.update(id, dto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMINISTRATOR)
   @Delete(':id')
-  remove(@Param('id') id: number) {
+  remove(@Param('id', ParseIntPipe) id: number) {
     return this.projectService.remove(id);
   }
 
@@ -96,9 +110,12 @@ export class projectController {
   }
 
   //nuevo metodo para obtener proyecto con actividad evidencias y voluntarios
+  @UseGuards(JwtAuthGuard)
   @Get(':id/details')
-  async getProjectDetails(@Param('id', ParseIntPipe) id: number) {
-    return await this.projectService.getProjectFullDetails(id);
+  async getProjectDetails(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.projectService.getProjectFullDetails(id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -114,24 +131,49 @@ export class projectController {
   }
 
   // Asignar facilitador a proyecto
+    @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMINISTRATOR)
   @Post('assign-facilitator')
   assignFacilitator(@Body() dto: AssignUserDto) {
-    return this.projectService.assignFacilitator(dto.projectId, dto.userId);
+    return this.projectService.assignFacilitator(
+      dto.projectId,
+      dto.userId,
+    );
   }
 
-  // Asignar coordinador a proyecto
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMINISTRATOR)
   @Post('assign-coordinator')
   assignCoordinator(@Body() dto: AssignUserDto) {
-    return this.projectService.assignCoordinator(dto.projectId, dto.userId);
+    return this.projectService.assignCoordinator(
+      dto.projectId,
+      dto.userId,
+    );
   }
 
   // ------------------- Rutas de director ----------------//
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMINISTRATOR, Role.SCHOOL_DIRECTOR)
   @Get('by-director/:directorId')
-  async getProjectsByDirector(@Param('directorId') directorId: number) {
+  getProjectsByDirector(
+    @Param('directorId', ParseIntPipe) directorId: number,
+    @Req() req: any,
+  ) {
+    const userId = Number(req.user.userId);
+    const roleName = req.user.role?.name ?? req.user.role;
+
+    if (
+      roleName !== Role.ADMINISTRATOR &&
+      userId !== directorId
+    ) {
+      throw new ForbiddenException(
+        'No tienes permiso para consultar este director',
+      );
+    }
+
     return this.projectService.findProjectsByDirector(directorId);
   }
-
 
 
   // // ------------------- Tipos de Proyecto -------------------
