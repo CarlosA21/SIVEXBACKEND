@@ -1,158 +1,194 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# SIVEX — Backend API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+**NestJS REST API supporting project management, volunteer enrollment, role-based workflows, evidence, and reporting for SIVEX.**
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+The backend is organized into domain modules and uses TypeORM with MySQL. It provides the services consumed by the [React/TypeScript frontend](https://github.com/CarlosA21/SIVEXFRONTEND).
 
-## Description
+## Technology stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+| Area | Technologies |
+| --- | --- |
+| Runtime and language | Node.js, TypeScript |
+| Framework | NestJS 10 |
+| Database and persistence | MySQL 8, TypeORM |
+| Authentication | Passport JWT, `@nestjs/jwt`, bcrypt, session tracking |
+| Validation | NestJS validation pipes, `class-validator`, DTOs |
+| Email integrations | Nodemailer / NestJS Mailer, Gmail API via Google APIs |
+| Tooling | ESLint, Prettier, Jest, Supertest |
+| Container support | Docker, Docker Compose |
 
-## Project setup
+## Main capabilities
 
-```bash
-$ npm install
+- **Users and roles:** user registration and management, role records, and project assignments.
+- **Authentication:** JWT-based login, token verification, logout, and session checks.
+- **Project management:** project records, project types, academic-unit associations, and assignment of coordinators and facilitators.
+- **Participation workflows:** project requests, enrollment requests, enrollments, and role relationships between users and projects.
+- **Activities and evidence:** activity management, file uploads, evidence metadata, and downloads.
+- **Reporting:** KPI and detail endpoints for projects, users, activities, and enrollments.
+- **Operational modules:** alerts, audit records, support tickets, sessions, and email/password recovery flows.
+
+## Architecture
+
+NestJS modules separate HTTP controllers, business services, DTOs, and TypeORM entities.
+
+```text
+src/
+├── academic-units/        # Academic-unit records
+├── activities/            # Project activity management
+├── alerts/                # Notifications/alerts
+├── audit/                 # Audit records
+├── auth/                  # JWT strategy, guards, login/logout
+├── enrollment-requests/  # Volunteer enrollment requests
+├── enrollments/          # Project enrollments
+├── evidence/              # Evidence uploads and downloads
+├── mail/                  # Email delivery integrations
+├── password-reset/       # Account recovery
+├── project-requests/     # Project request workflow
+├── projects/             # Projects, types, role assignments
+├── reports/              # KPI and report endpoints
+├── role/                 # Roles
+├── sessions/             # Login session tracking
+├── support/              # Support tickets
+├── users/                # User management
+├── app.module.ts         # Modules and database configuration
+└── main.ts               # Application startup
 ```
 
-## Compile and run the project
+The domain model includes projects associated with activities, reports, alerts, requests, enrollments, academic units, and users. Project participation roles are also represented explicitly through a `user_project_role` entity.
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 20 and npm (the repository Dockerfile uses Node 20).
+- MySQL 8, with a database and application user available.
+- Email provider credentials for the email-dependent features (e.g. password reset).
+
+### 1. Clone and install
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone https://github.com/CarlosA21/SIVEXBACKEND.git
+cd SIVEXBACKEND
+npm ci
 ```
 
-## Run tests
+### 2. Prepare the database
+
+Create a MySQL database and assign the application user appropriate permissions. For example, using your MySQL administration tool:
+
+```sql
+CREATE DATABASE sivex CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+Use a separate, least-privilege application account rather than a production root account. Table synchronization in `src/app.module.ts` is currently enabled only when `NODE_ENV=development`; for production, use a reviewed migration process.
+
+### 3. Configure environment variables
+
+Create a `.env` file in the repository root and supply your own values:
+
+```dotenv
+# Application
+NODE_ENV=development
+PORT=3001
+HOST_FRONTEND=http://localhost:5173
+
+# MySQL
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_NAME=sivex
+
+# Authentication
+JWT_SECRET=replace_with_a_long_random_secret
+JWT_TOKEN_EXPIRATION_TIME=2h
+
+# SMTP integration (if using the mailer module)
+MAIL_HOST=your_smtp_host
+MAIL_PORT=587
+MAIL_USER=your_smtp_user
+MAIL_PASSWORD=your_smtp_password
+
+# Gmail API integration (required for the current password-reset email flow)
+GMAIL_USER=your_sender_email
+GMAIL_CLIENT_ID=your_client_id
+GMAIL_CLIENT_SECRET=your_client_secret
+GMAIL_REDIRECT_URI=your_oauth_redirect_uri
+GMAIL_REFRESH_TOKEN=your_refresh_token
+```
+
+These names reflect configuration referenced in the repository. Real credentials must not be committed. Depending on the mail provider, additional external setup may be required before password-reset emails work.
+
+### 4. Run the API
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:dev
 ```
 
-## Deployment
+The application listens on port `3001` by default (or the port supplied through `PORT`).
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Docker support
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+The repository includes a multi-stage `Dockerfile` and a `docker-compose.yml` with MySQL and backend services. **Review and replace the example MySQL root password in the current Compose file before use.** The backend container reads a local `.env` file.
 
-```bash
-$ npm install -g mau
-$ mau deploy
+When running both services inside Compose, the API's database connection should use the Docker service hostname and container port:
+
+```dotenv
+DB_HOST=mysql
+DB_PORT=3306
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+When the API runs directly on the host while MySQL runs through the supplied Compose port mapping, the corresponding host-side settings are `DB_HOST=127.0.0.1` and `DB_PORT=3307`.
 
-## Resources
+The evidence module currently stores uploaded files in a local `uploads/` directory. In containerized deployments, configure persistent storage for that directory rather than relying on an ephemeral container filesystem.
 
-Check out a few resources that may come in handy when working with NestJS:
+## Selected API routes
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+The following examples come from the NestJS controllers; this is **not** an exhaustive API reference.
 
-## Support
+| Area | Method and path | Purpose |
+| --- | --- | --- |
+| Authentication | `POST /auth/login` | Sign in and obtain an access token |
+| Authentication | `POST /auth/verify` | Verify a token |
+| Authentication | `POST /auth/logout` | Close an authenticated session |
+| Users | `GET /users` | List users |
+| Projects | `GET /projects` | List projects |
+| Projects | `POST /projects` | Create a project |
+| Projects | `GET /projects/:id` | Get a project |
+| Project requests | `POST /project-requests` | Submit a project request |
+| Enrollment requests | `POST /enrollment-requests` | Submit an enrollment request |
+| Evidence | `POST /evidence/file` | Upload evidence |
+| Reports | `GET /reports/kpis` | Obtain dashboard metrics |
+| Support | `POST /support/ticket` | Create a support ticket |
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Some endpoints require `Authorization: Bearer <access_token>`; certain operations also apply role requirements. Check each controller's guards and authorization decorators before integrating a client. Route availability does not, by itself, establish that an endpoint has been hardened for public access.
 
-## Stay in touch
+## Scripts
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+| Command | Purpose |
+| --- | --- |
+| `npm run start:dev` | Run the API in watch mode |
+| `npm run build` | Compile the NestJS application |
+| `npm run start:prod` | Start compiled code |
+| `npm run lint` | Run ESLint (with automatic fixes) |
+| `npm run test` | Run unit tests |
+| `npm run test:e2e` | Run end-to-end tests |
+| `npm run test:cov` | Generate test coverage |
 
-## License
+**Testing note:** the current `test/app.e2e-spec.ts` contains the default scaffold test for a `Hello World!` root response. Replace or expand it with tests of real SIVEX behavior before treating the suite as evidence of application coverage.
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Security and deployment checklist
 
-## configuracion variables de entorno
+Before any production or publicly accessible deployment:
 
-Aquí tienes una guía breve y práctica para obtener y configurar cada variable de entorno que listaste, con comandos y buenas prácticas.
+- Require an externally supplied, strong `JWT_SECRET`; remove the hardcoded JWT fallback currently present in authentication configuration.
+- Replace the fixed database password in the checked-in Compose configuration; use secrets/environment configuration for deployments.
+- Restrict CORS to trusted frontend origins. The current `main.ts` uses a wildcard origin together with credentials and needs review.
+- Review authorization on sensitive controllers and enforce permissions on the server, not only in the frontend.
+- Keep `.env` and uploaded files out of version control; review the repository and its history for secrets before publishing.
+- Replace development schema synchronization with reviewed database migrations for production.
+- Configure persistent evidence-file storage, backups, appropriate logging, and HTTPS at the infrastructure layer.
 
-Resumen rápido — dónde ponerlas
+## Related project
 
-En desarrollo local: archivo .env (no lo subas al repositorio).
-En producción: usar el panel de tu proveedor (Railway / Heroku / Vercel / AWS Secrets Manager / Azure Key Vault) o variables de entorno del sistema.
-Nunca comites valores sensibles; rota y restringe permisos.
-DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
-Si usas MySQL/MariaDB local:
-Instala el servidor (ej. MySQL).
-Crea base y usuario:
-DB_HOST=localhost, DB_PORT=3306 (por defecto), DB_USER y DB_PASSWORD según lo creado, DB_NAME=sivex.
-Si usas un servicio en la nube (Railway, PlanetScale, Amazon RDS):
-Copia host, puerto, usuario, password y nombre de BD desde el panel del proveedor.
-Pega esos valores en las variables de entorno del servicio (o en .env local).
-NODE_ENV
-Entorno de ejecución: "development" | "production" | "test".
-En producción configura NODE_ENV=production; en local usa development o test.
-JWT_SECRET
-Genera un secreto seguro (no usar texto legible). Ejemplo:
-Guarda el resultado en JWT_SECRET en tu .env o en el gestor de secretos.
-Rota periódicamente y no lo expongas en logs.
-HOST_FRONTEND
-URL pública de tu frontend (ej.: https://mi-frontend.example.com).
-La obtienes desde el despliegue del frontend (Vercel, Netlify, Railway, etc.) y se usa para CORS y enlaces en emails.
-GMAIL_USER, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REDIRECT_URI, GMAIL_REFRESH_TOKEN
-Crear credenciales OAuth en Google Cloud Console:
-Ve a https://console.cloud.google.com/apis/credentials
-Crea un proyecto si no tienes.
-Habilita Gmail API (Library → Gmail API → Enable).
-Crea credenciales OAuth 2.0 (tipo: Desktop o Web según flujo). Obtendrás CLIENT_ID y CLIENT_SECRET.
-En REDIRECT_URI pon la URL que usarás (p. ej. https://developers.google.com/oauthplayground si usas OAuth Playground para obtener refresh token).
-Obtener REFRESH_TOKEN (usando OAuth Playground):
-Abre https://developers.google.com/oauthplayground
-Settings → marca “Use your own OAuth credentials” y pega CLIENT_ID / CLIENT_SECRET.
-Selecciona scope de Gmail (por ejemplo: https://mail.google.com/ o https://www.googleapis.com/auth/gmail.send).
-Authorize APIs → Exchange authorization code for tokens → copia refresh token.
-GMAIL_USER = dirección de correo asociada (ej. tu-email@gmail.com).
-Guarda CLIENT_ID, CLIENT_SECRET y REFRESH_TOKEN como variables seguras. Evita usar usuario/clave directas.
-BASE_EVIDENCE_URL
-URL pública del servicio que sirve evidencias (downloads). En local puede ser http://localhost:3001/evidence/download; en prod la URL pública del microservicio.
-Obtenerla desde el despliegue del servicio que maneja archivos.
-Buenas prácticas y seguridad
-
-No comites .env. Añade .env a .gitignore.
-Usa gestores de secretos en producción (Vault, AWS Secrets Manager, Railway secrets).
-Minimiza permisos: el usuario DB debería tener solo los permisos necesarios.
-Asegura la cuenta de Gmail: usa una cuenta dedicada o servicio con permisos mínimos; activa 2FA y usa OAuth refresh tokens (no contraseñas en texto).
-Regenera/rota JWT_SECRET y claves si sospechas compromiso.
-Marca password en tu entidad como select:false para evitar fugas en consultas.
-Para Windows (temporal, session): PowerShell:
-Cómo cargarlas en NestJS (ejemplo)
-
-Usa dotenv / @nestjs/config; en main app module:
-Accede con process.env.DB_HOST o ConfigService.
-¿Quieres que genere comandos específicos para tu despliegue en Railway/Heroku o que aplique select:false en la entidad User y actualice los tests?
+- [SIVEX frontend — React/TypeScript application](https://github.com/CarlosA21/SIVEXFRONTEND)
